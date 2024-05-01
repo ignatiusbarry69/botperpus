@@ -1,8 +1,12 @@
 const execute = (payload) => {
-    const { response } = payload;
+    const { response, context_map } = payload;
     // const intent = intents
-
-    return response
+    if(typeof context_map === 'object'){
+      if('username' in context_map){
+        console.log("ok username masuk");
+      }
+    }
+    return payload
     // if (intent[0] === "find_buku") {
     //   return ""
 
