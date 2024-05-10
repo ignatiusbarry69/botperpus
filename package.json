@@ -10,12 +10,14 @@
   "author": "barry",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.8",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "knex": "^3.1.0",
     "mongodb": "^6.5.0",
     "node-wit": "^6.6.0",
     "nodemon": "^3.0.2",
-    "telegraf": "^4.15.3"
+    "telegraf": "^4.15.3",
+    "xml2js": "^0.6.2"
   }
 }

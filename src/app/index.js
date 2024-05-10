@@ -9,76 +9,35 @@ const controller = require('./controller')
 const app = express()
 const bot = new Telegraf(config.botToken)
 
-// const sessionId = uuidv4();
-
-// bot.on('text', async (ctx) => {
-//     const user = ctx.message.from.first_name + " " + ctx.message.from.last_name;
-//     console.log(`Received message from ${user}: ${ctx.message.text}\n`);
-//     console.log(JSON.stringify(ctx.message.from.id));
-
-//     const id = ctx.message.from.id
-//     const resp = await mongo.contextCollection.findOne({id:id})
-//     console.log(JSON.stringify(resp));
-
-//     if(resp){
-//       await wit.startConvo(sessionId, resp.ctx, ctx.message.text)
-//       .then((payload) => {
-//           console.log(sessionId);
-//           console.log(JSON.stringify(payload));
-//           return mongo.contextCollection.updateOne({ id: id }, { $set: { ctx: payload.context_map } })
-//                 .then(() => {
-//                     ctx.reply(payload.response.text);
-//                 })
-//                 .catch((error) => {
-//                     console.error("Error updating context map in MongoDB:", error);
-//                 });
-//       })
-//       .catch((error) => {
-//           console.error("Error:", error);
-//       });
-//     }else {
-//       const newEntry = { id: id, ctx: {} };
-//       await mongo.contextCollection.insertOne(newEntry)
-//           .then(() => {
-//               return wit.startConvo(sessionId, {}, ctx.message.text);
-//           })
-//           .then((payload) => {
-//               console.log(sessionId);
-//               console.log(JSON.stringify(payload));
-//               return mongo.contextCollection.updateOne({ id: id }, { $set: { ctx: payload.context_map } })
-//                 .then(() => {
-//                     ctx.reply(payload.response.text);
-//                 })
-//                 .catch((error) => {
-//                     console.error("Error updating context map in MongoDB:", error);
-//                 });
-//           })
-//           .catch((error) => {
-//               console.error("Error:", error);
-//           });
-//   }
-// });
 const sessionId = uuidv4();
 
 bot.on('text', async (ctx) => {
     const user = ctx.message.from.first_name + " " + ctx.message.from.last_name;
-    console.log(`Received message from ${user}: ${ctx.message.text}\n`);
+    console.log(`Received message from ${user}: ${ctx.message.text}`);
     console.log(JSON.stringify(ctx.message.from.id));
 
     const id = ctx.message.from.id;
     const resp = await mongo.contextCollection.findOne({ id: id });
-
+    console.log(resp)
     const handleConversation = async (context) => {
       let witPayload;
       return wit.startConvo(sessionId, context, ctx.message.text)
           .then((payload) => {
-              console.log(sessionId);
+            //   console.log(sessionId);
               console.log(JSON.stringify(payload));
               witPayload = payload;
               return mongo.contextCollection.updateOne({ id: id }, { $set: { ctx: payload.context_map } });
           })
           .then(() => {
-              ctx.reply(witPayload.response.text);
+            controller.execute(witPayload)
+            .then(answer => {
+                ctx.reply(answer);
+            })
+            .catch(error => {
+                ctx.reply("Wah maaf, service itu lagi dibenerin, coba lagi nanti, atau coba service lain terlebih dahulu 🙏");
+                console.error('Error executing controller:', error);
+                // Handle the error if needed
+            });
           })
           .catch((error) => {
               console.error("Error wit:", error);
