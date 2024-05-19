@@ -1,7 +1,45 @@
 const axios = require('axios');
 const { parseString } = require('xml2js');
+const DB = require('../conf/knex');
 
 const apiUrl = 'https://library.ukdw.ac.id/main/opac/index.php';
+
+// function parseStringHourIntoLong(strHour){
+//   const [hours, minutes] = strHour.split(":");
+//   const date = new Date();
+//   date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+//   const customTimeInMillis = date.getTime();
+//   const longCustomTime = BigInt(customTimeInMillis);
+//   return longCustomTime
+// }
+
+function parseStringHourIntoLong(timeInput) {
+  const [hours, minutes] = timeInput.split(':').map(Number);
+
+  const currentDate = new Date();
+  currentDate.setHours(hours, minutes, 0, 0);
+
+  const timeInMillis = currentDate.getTime();
+
+  return timeInMillis;
+}
+
+function parseLongIntoStringHour(dateLong) {
+  const date = new Date(Number(dateLong));
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+function checkIsTimeAvailable(oldStart,oldEnd,newStart,newEnd){
+  let newStartLong = parseStringHourIntoLong(newStart);
+  let newEndLong = parseStringHourIntoLong(newEnd);
+  if(newEndLong <= oldStart || newStartLong >= oldEnd){
+    return true
+  }else{
+    return false
+  }
+}
 
 function extractDetail(xmlData) {
   let extractedData = [];
@@ -74,6 +112,7 @@ const execute = async (payload) => {
   };
 
   if(context_map.nourut){
+    console.log("it actually goes here lol")
     queryParamsDetail.id = context_map.nourut
   }
 
@@ -123,6 +162,77 @@ const execute = async (payload) => {
       const extractedData = await extractDetail(data);
       console.log(extractedData)
       finalResponse = extractedData.slice(0,7).join('\n')+", untuk informasi selengkapnya kamu dapat mengunjungi https://library.ukdw.ac.id/main/opac/index.php?p=show_detail&id="+queryParamsDetail.id+"&keywords=";
+    }catch(error){
+      console.error('Error fetching data detail:', error);
+      throw error;
+    }
+    
+  }else if(action != undefined && action === 'minta_nim'){
+    finalResponse = response.text;
+  }else if(action != undefined && action === 'input_peminjaman'){
+    if(context_map.nim){
+      const mahasiswa = await DB('mahasiswa')
+        .select(
+          '*'
+        ).where('nim',parseInt(context_map.nim))
+      if(mahasiswa.length===0){
+        finalResponse = "Reservasi gagal, pastikan kamu memasukkan identitas yang benar"
+      }else{
+        // let found = mahasiswa.find(student => student.nim === parseInt(context_map.nim))
+        // console.log("nim: "+parseInt(context_map.nim))
+        // console.log("typenya: "+(typeof parseInt(context_map.nim)))
+        // console.log(found)
+        const newData = {
+          id_ruang: context_map.ruang,
+          nim: context_map.nim,
+          waktu_start: parseStringHourIntoLong(context_map.waktumulai),
+          waktu_selesai: parseStringHourIntoLong(context_map.waktuselesai)
+        };
+        const insertedRows = await DB('peminjaman').insert(newData);
+        console.log(insertedRows);
+        finalResponse = "Reservasi ruang berhasil, silahkan datang ke perpustakaan pada waktu yang ditentukan, dan berikan NIM atau Nomor Pegawaimu kepada petugas yang berjaga"
+      }
+    }else{
+      finalResponse = "error, context nim not found"
+    }
+    
+  }else if(action != undefined && action === 'pinjam_ruang'){
+    try{
+      let currentDate = new Date();
+      let yesterdayDate = new Date(currentDate);
+      yesterdayDate.setDate(currentDate.getDate() - 1);
+      let tommorowInMillis = yesterdayDate.getTime();
+      let tommorow = BigInt(tommorowInMillis);
+      let idRuang = context_map.ruang
+
+      const products = await DB('peminjaman')
+        .select(
+          '*'
+        ).where('id_ruang',idRuang).where('waktu_start', '>', tommorow)
+      console.log(products)
+      if(products.length===0){
+        finalResponse = "Ruang "+context_map.ruang+" tersedia, kamu jadi pinjam untuk "+context_map.waktumulai+" - "+context_map.waktuselesai+"? Tolong konfirmasi dengan pesan 'Ya' atau 'Tidak', bila kamu tidak mengkonfirmasi peminjaman ini dengan respon 'Ya', proses peminjaman akan dibatalkan"
+      }else{
+        let foundOverlap = false;
+        products.forEach(product => {
+          if(!foundOverlap){
+            let cek = checkIsTimeAvailable(product.waktu_start, product.waktu_selesai, context_map.waktumulai, context_map.waktuselesai);
+            if (cek) {
+              finalResponse = "Ruang "+context_map.ruang+" tersedia, kamu jadi pinjam untuk "+context_map.waktumulai+" - "+context_map.waktuselesai+"? Tolong konfirmasi dengan pesan 'Ya' atau 'Tidak', bila kamu tidak mengkonfirmasi peminjaman ini dengan respon 'Ya', proses peminjaman akan dibatalkan";
+            } else {
+              console.log(product);
+              let startLong = product.waktu_start;
+              let startStringHour = parseLongIntoStringHour(startLong);
+              let endLong = product.waktu_selesai;
+              let endStringHour = parseLongIntoStringHour(endLong);
+              finalResponse = "Yah, ruang itu masih dipake buat jam " + startStringHour + " sampai " + endStringHour;
+              foundOverlap = true
+            }
+          }
+        });
+      }
+      // finalResponse = "Kamu mau minjem ruang "+context_map.ruang+" dari jam "+context_map.waktumulai+" sampai "+context_map.waktuselesai+" betul?";
+
     }catch(error){
       console.error('Error fetching data detail:', error);
       throw error;

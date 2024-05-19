@@ -46,7 +46,14 @@ bot.on('text', async (ctx) => {
   
 
     if (resp) {
-        await handleConversation(resp.ctx);
+        if(resp.ctx!=null){
+          await handleConversation(resp.ctx);
+        }else{
+          await mongo.contextCollection.deleteOne({ id: id });
+          const newEntry = { id: id, ctx: {} };
+          await mongo.contextCollection.insertOne(newEntry);
+          await handleConversation({});
+        }
     } else {
         const newEntry = { id: id, ctx: {} };
         await mongo.contextCollection.insertOne(newEntry);
