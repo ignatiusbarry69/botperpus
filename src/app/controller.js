@@ -1,17 +1,10 @@
 const axios = require('axios');
 const { parseString } = require('xml2js');
 const DB = require('../conf/knex');
+const mongo = require('../conf/mongo')
 
 const apiUrl = 'https://library.ukdw.ac.id/main/opac/index.php';
 
-// function parseStringHourIntoLong(strHour){
-//   const [hours, minutes] = strHour.split(":");
-//   const date = new Date();
-//   date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-//   const customTimeInMillis = date.getTime();
-//   const longCustomTime = BigInt(customTimeInMillis);
-//   return longCustomTime
-// }
 
 function parseStringHourIntoLong(timeInput) {
   const [hours, minutes] = timeInput.split(':').map(Number);
@@ -147,7 +140,8 @@ const execute = async (payload) => {
                                                  "No.      ||Judul Buku     \n"+
                                                  "===============================\n"+
                                                  combinedData+"\n"+
-                                                 "===============================";
+                                                 "===============================\n"+
+                                                 "Untuk mengecek lokasi rak penyimpanan buku, silahkan beri nomor bukunya kepadaku";
           }
           
 
@@ -161,7 +155,7 @@ const execute = async (payload) => {
       const data = opac.data;
       const extractedData = await extractDetail(data);
       console.log(extractedData)
-      finalResponse = extractedData.slice(0,7).join('\n')+", untuk informasi selengkapnya kamu dapat mengunjungi https://library.ukdw.ac.id/main/opac/index.php?p=show_detail&id="+queryParamsDetail.id+"&keywords=";
+      finalResponse = extractedData.slice(0,7).join('\n')+", untuk informasi selengkapnya kamu dapat mengunjungi tautan berikut:\nhttps://library.ukdw.ac.id/main/opac/index.php?p=show_detail&id="+queryParamsDetail.id+"&keywords=";
     }catch(error){
       console.error('Error fetching data detail:', error);
       throw error;
@@ -176,7 +170,7 @@ const execute = async (payload) => {
           '*'
         ).where('nim',parseInt(context_map.nim))
       if(mahasiswa.length===0){
-        finalResponse = "Reservasi gagal, pastikan kamu memasukkan identitas yang benar"
+        finalResponse = "Reservasi gagal nomor yang kamu masukkan tidak terdaftar, silahkan coba lakukan peminjaman lain dengan nomor yang valid"
       }else{
         // let found = mahasiswa.find(student => student.nim === parseInt(context_map.nim))
         // console.log("nim: "+parseInt(context_map.nim))
@@ -196,19 +190,29 @@ const execute = async (payload) => {
       finalResponse = "error, context nim not found"
     }
     
+  }else if(action != undefined && action === 'start'){
+    finalResponse = "Halo, aku Bot PerpusDW, apa yang kamu perlukan?\n- Alamat perpustakaan\n- Jam operasional perpustakaan\n- Fasilitas perpustakaan\n- Prosedur peminjaman buku\n- Prosedur pengembalian buku\n- Denda kehilangan/keterlambatan buku\n- Pencarian buku\n- Pencarian jurnal\n- Peminjaman ruang\nAku memiliki pengetahuan seputar hal-hal diatas, cobalah tanyakan apapun terkait topik-topik tersebut 😁"
+  }else if(action != undefined && action === 'cek_kapasitas'){
+    if(context_map.ruang=="rbbm1"||context_map.ruang=="rbbm2"||context_map.ruang=="rbbm3"||context_map.ruang=="rbbm4"||context_map.ruang=="rbbm5"||context_map.ruang=="rbbm6"||context_map.ruang=="rbbm7"||context_map.ruang=="rbbm8"||context_map.ruang=="rbbm9"){
+        finalResponse = "Ruang bilik belajar mandiri hanya cukup untuk 1 orang"
+    }else if(context_map.ruang=="rav"){
+      finalResponse = "Ruang audio visual dapat menampung sekitar 25 orang"
+    }else if(context_map.ruang=="rdlt2"){
+      finalResponse = "Ruang diskusi dapat menampung sekitar 15 orang"
+    }
   }else if(action != undefined && action === 'pinjam_ruang'){
     try{
       let currentDate = new Date();
       let yesterdayDate = new Date(currentDate);
       yesterdayDate.setDate(currentDate.getDate() - 1);
-      let tommorowInMillis = yesterdayDate.getTime();
-      let tommorow = BigInt(tommorowInMillis);
+      let yesterdayInMillis = yesterdayDate.getTime();
+      let yesterday = BigInt(yesterdayInMillis);
       let idRuang = context_map.ruang
 
       const products = await DB('peminjaman')
         .select(
           '*'
-        ).where('id_ruang',idRuang).where('waktu_start', '>', tommorow)
+        ).where('id_ruang',idRuang).where('waktu_start', '>', yesterday)
       console.log(products)
       if(products.length===0){
         finalResponse = "Ruang "+context_map.ruang+" tersedia, kamu jadi pinjam untuk "+context_map.waktumulai+" - "+context_map.waktuselesai+"? Tolong konfirmasi dengan pesan 'Ya' atau 'Tidak', bila kamu tidak mengkonfirmasi peminjaman ini dengan respon 'Ya', proses peminjaman akan dibatalkan"
@@ -225,7 +229,7 @@ const execute = async (payload) => {
               let startStringHour = parseLongIntoStringHour(startLong);
               let endLong = product.waktu_selesai;
               let endStringHour = parseLongIntoStringHour(endLong);
-              finalResponse = "Yah, ruang itu masih dipake buat jam " + startStringHour + " sampai " + endStringHour;
+              finalResponse = "Yah, ruang itu masih dipake buat jam " + startStringHour + " sampai " + endStringHour+" kamu bisa coba pinjam untuk lain waktu, atau mungkin kamu mau meminjam ruangan yang lain";
               foundOverlap = true
             }
           }

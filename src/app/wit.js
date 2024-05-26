@@ -19,11 +19,7 @@ const send = async (message) => {
 
 const startConvo = async (sessionId, ctx_map, message) => {
     try {
-        console.log("sempat masuk sini");
-
         const data = await client.event(sessionId, ctx_map, message);
-        // console.log("terus error");
-
         return data;
     } catch (error) {
         console.log("masuk error");

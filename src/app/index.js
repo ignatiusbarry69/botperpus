@@ -12,7 +12,7 @@ const bot = new Telegraf(config.botToken)
 const sessionId = uuidv4();
 
 bot.on('text', async (ctx) => {
-    const user = ctx.message.from.first_name + " " + ctx.message.from.last_name;
+    const user = ctx.message.from.first_name;
     console.log(`Received message from ${user}: ${ctx.message.text}`);
     console.log(JSON.stringify(ctx.message.from.id));
 
@@ -31,10 +31,13 @@ bot.on('text', async (ctx) => {
           .then(() => {
             controller.execute(witPayload)
             .then(answer => {
+                const currentDate = new Date();
+                const newConversation = { date: currentDate, id: id, nama: user, request: ctx.message.text, response: answer };
+                mongo.conversationCollection.insertOne(newConversation);
                 ctx.reply(answer);
             })
             .catch(error => {
-                ctx.reply("Wah maaf, service itu lagi dibenerin, coba lagi nanti, atau coba service lain terlebih dahulu 🙏");
+                ctx.reply("Wah maaf, service itu lagi dibenerin, coba lagi nanti 🙏");
                 console.error('Error executing controller:', error);
                 // Handle the error if needed
             });
@@ -68,7 +71,7 @@ bot.telegram.setWebhook(`${config.webhookDomain}msg`)
 app.use(bot.webhookCallback('/msg'))
 
 app.get('/', (req, res) => {
-  res.send('Merry Christmast!')
+  res.send('<center style="font-size:40px;margin-top:23%">Bot Perpus UKDW Service 👋</center>')
 })
 
 app.listen(process.env.PORT, () => {

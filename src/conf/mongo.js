@@ -13,7 +13,10 @@ const client = new MongoClient(uri,  {
 const myDB = client.db(config.mgDatabase);
 
 const contextCollection = myDB.collection("context");
+const conversationCollection = myDB.collection("conversation");
+
 
 module.exports = {
-	contextCollection
+	contextCollection,
+    conversationCollection
 };
