@@ -104,21 +104,21 @@ const execute = async (payload) => {
     location: '0'
   };
 
-  if(context_map.nourut){
+  if(context_map.nourut!=undefined){
     console.log("it actually goes here lol")
     queryParamsDetail.id = context_map.nourut
   }
 
-  if(context_map.noseri){
+  if(context_map.noseri!=undefined){
     queryParams.isbn = context_map.noseri
   }
-  if (context_map.querybuku) {
+  if (context_map.querybuku!=undefined) {
     queryParams.title = context_map.querybuku;
   }
-  if (context_map.jenisbuku) {
+  if (context_map.jenisbuku!=undefined) {
     queryParams.subject = context_map.jenisbuku;
   }
-  if (context_map.pengarangbuku) {
+  if (context_map.pengarangbuku!=undefined) {
     queryParams.author = context_map.pengarangbuku;
   }
 
@@ -136,11 +136,11 @@ const execute = async (payload) => {
             const extractedData = await extractIdAndTitleFromXml(data);
             const filteredData = extractedData.slice(0, 5);
             const combinedData = filteredData.join('\n');
-            finalResponse = response.text+"\n\n"+"===============================\n"+
+            finalResponse = response.text+"\n\n"+"=============================\n"+
                                                  "No.      ||Judul Buku     \n"+
-                                                 "===============================\n"+
+                                                 "=============================\n"+
                                                  combinedData+"\n"+
-                                                 "===============================\n"+
+                                                 "=============================\n"+
                                                  "Untuk mengecek lokasi rak penyimpanan buku, silahkan beri nomor bukunya kepadaku";
           }
           
@@ -215,7 +215,8 @@ const execute = async (payload) => {
         ).where('id_ruang',idRuang).where('waktu_start', '>', yesterday)
       console.log(products)
       if(products.length===0){
-        finalResponse = "Ruang "+context_map.ruang+" tersedia, kamu jadi pinjam untuk "+context_map.waktumulai+" - "+context_map.waktuselesai+"? Tolong konfirmasi dengan pesan 'Ya' atau 'Tidak', bila kamu tidak mengkonfirmasi peminjaman ini dengan respon 'Ya', proses peminjaman akan dibatalkan"
+        // , bila kamu tidak mengkonfirmasi peminjaman ini dengan respon 'Ya', proses peminjaman akan dibatalkan
+        finalResponse = "Ruang "+context_map.ruang+" tersedia, kamu jadi pinjam untuk "+context_map.waktumulai+" - "+context_map.waktuselesai+"? Tolong konfirmasi dengan pesan 'Ya' atau 'Tidak'"
       }else{
         let foundOverlap = false;
         products.forEach(product => {
