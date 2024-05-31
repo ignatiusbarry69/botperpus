@@ -199,6 +199,8 @@ const execute = async (payload) => {
       finalResponse = "Ruang audio visual dapat menampung sekitar 25 orang"
     }else if(context_map.ruang=="rdlt2"){
       finalResponse = "Ruang diskusi dapat menampung sekitar 15 orang"
+    }else{
+      finalResponse = "Aku tidak mengenali ruang itu"
     }
   }else if(action != undefined && action === 'pinjam_ruang'){
     try{
@@ -223,7 +225,7 @@ const execute = async (payload) => {
           if(!foundOverlap){
             let cek = checkIsTimeAvailable(product.waktu_start, product.waktu_selesai, context_map.waktumulai, context_map.waktuselesai);
             if (cek) {
-              finalResponse = "Ruang "+context_map.ruang+" tersedia, kamu jadi pinjam untuk "+context_map.waktumulai+" - "+context_map.waktuselesai+"? Tolong konfirmasi dengan pesan 'Ya' atau 'Tidak', bila kamu tidak mengkonfirmasi peminjaman ini dengan respon 'Ya', proses peminjaman akan dibatalkan";
+              finalResponse = "Ruang "+context_map.ruang+" tersedia, kamu jadi pinjam untuk "+context_map.waktumulai+" - "+context_map.waktuselesai+"? Tolong konfirmasi dengan pesan 'Ya' atau 'Tidak'";
             } else {
               console.log(product);
               let startLong = product.waktu_start;
@@ -240,7 +242,7 @@ const execute = async (payload) => {
 
     }catch(error){
       console.error('Error fetching data detail:', error);
-      throw error;
+      // throw error;
     }
     
   }else {
