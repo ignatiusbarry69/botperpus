@@ -242,7 +242,7 @@ const execute = async (payload) => {
 
     }catch(error){
       console.error('Error fetching data detail:', error);
-      // throw error;
+      throw error;
     }
     
   }else {
