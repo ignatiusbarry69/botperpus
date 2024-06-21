@@ -1,0 +1,8 @@
+**/node_modules/
+**/mongo_data/
+.git
+**/pg_data/
+perpus.sql
+Dockerfile
+.dockerignore
+.gitignore
